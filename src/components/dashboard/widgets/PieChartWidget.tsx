@@ -24,10 +24,14 @@ export function PieChartWidget({ data, onClick, selectedElement }: ChartProps) {
                 <Cell
                   key={`cell-${idx}`}
                   fill={entry.color || COLORS[idx % COLORS.length]}
+                  opacity={
+                    selectedElement && selectedElement !== entry.name ? 0.3 : 1
+                  }
                   stroke={
-                    selectedElement === entry.name ? "#0f172a" : "transparent"
+                    selectedElement === entry.name ? "#ffffff" : "transparent"
                   }
                   strokeWidth={2}
+                  className="transition-all duration-300"
                 />
               ))}
             </Pie>

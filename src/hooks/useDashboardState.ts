@@ -111,6 +111,42 @@ const defaultWidgetsPage3: Widget[] = [
   },
 ];
 
+const defaultWidgetsPage4: Widget[] = [
+  {
+    id: "kpi-loss-p4",
+    type: "kpi-loss",
+    title: "Portfolio Risk Level",
+    grid: { x: 0, y: 0, w: 6, h: 4 },
+  },
+  {
+    id: "chart-pie-p4",
+    type: "chart-pie",
+    title: "High Risk Claims by Category",
+    grid: { x: 0, y: 4, w: 6, h: 12 },
+  },
+  {
+    id: "chart-trend-p4",
+    type: "chart-trend",
+    title: "Loss Ratio Volatility",
+    grid: { x: 6, y: 0, w: 6, h: 16 },
+  },
+];
+
+const defaultWidgetsPage5: Widget[] = [
+  {
+    id: "table-dealers-p5",
+    type: "table-dealers",
+    title: "Dealer Performance Ranking",
+    grid: { x: 0, y: 0, w: 12, h: 14 },
+  },
+  {
+    id: "chart-region-p5",
+    type: "chart-region",
+    title: "Regional Dealer Distribution",
+    grid: { x: 0, y: 14, w: 12, h: 10 },
+  },
+];
+
 const defaultPages: ReportPage[] = [
   {
     id: "p1",
@@ -129,6 +165,18 @@ const defaultPages: ReportPage[] = [
     title: "Claims Deep Dive",
     widgets: defaultWidgetsPage3,
     layouts: { lg: defaultWidgetsPage3.map((w) => ({ i: w.id, ...w.grid })) },
+  },
+  {
+    id: "p4",
+    title: "Risk Analysis",
+    widgets: defaultWidgetsPage4,
+    layouts: { lg: defaultWidgetsPage4.map((w) => ({ i: w.id, ...w.grid })) },
+  },
+  {
+    id: "p5",
+    title: "Dealer Performance",
+    widgets: defaultWidgetsPage5,
+    layouts: { lg: defaultWidgetsPage5.map((w) => ({ i: w.id, ...w.grid })) },
   },
 ];
 

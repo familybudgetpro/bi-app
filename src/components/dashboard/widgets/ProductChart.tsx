@@ -64,6 +64,10 @@ export function ProductChart({ data, onClick, selectedElement }: ChartProps) {
                     ? CHART_COLORS.primary
                     : CHART_COLORS.blue
                 }
+                opacity={
+                  selectedElement && selectedElement !== entry.product ? 0.3 : 1
+                }
+                className="transition-all duration-300"
               />
             ))}
           </Bar>

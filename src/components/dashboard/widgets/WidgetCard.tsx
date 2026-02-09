@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { MoreVertical, X, Image, FileText, Move } from "lucide-react";
+import { exportDashboardToPDF } from "@/lib/ExportManager";
 
 interface WidgetCardProps {
   id: string;
@@ -19,15 +20,21 @@ export function WidgetCard({
   className = "",
 }: WidgetCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   const handleExport = (type: "pdf" | "image") => {
-    // Placeholder - would call parent export logic
-    console.log(`Exporting ${id} as ${type}`);
+    if (cardRef.current) {
+      exportDashboardToPDF(
+        cardRef.current,
+        `Widget-${title.replace(/\s+/g, "-")}`,
+      );
+    }
     setMenuOpen(false);
   };
 
   return (
     <div
+      ref={cardRef}
       className={`bg-card border border-border rounded-xl shadow-sm flex flex-col h-full overflow-hidden transition-shadow hover:shadow-md ${className}`}
     >
       <div className="flex items-center justify-between p-3 border-b border-border/50 bg-muted/10">

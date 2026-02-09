@@ -22,49 +22,56 @@ export function ChatPanel({ messages, onSendMessage }: ChatPanelProps) {
   };
 
   return (
-    <div className="h-80 flex flex-col bg-muted/30 border-t border-border">
-      <div className="p-3 border-b border-border flex items-center gap-2 bg-card">
-        <div className="w-6 h-6 bg-gradient-to-br from-primary to-purple-600 rounded flex items-center justify-center shadow-sm">
-          <MessageSquare size={12} className="text-primary-foreground" />
+    <div className="h-full flex flex-col bg-card">
+      <div className="p-4 border-b border-border bg-muted/20">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-5 h-5 bg-gradient-to-br from-primary to-purple-600 rounded flex items-center justify-center shadow-sm">
+            <MessageSquare size={10} className="text-primary-foreground" />
+          </div>
+          <span className="text-sm font-bold text-foreground">Clarity AI</span>
+          <span className="ml-auto text-[10px] bg-green-500/10 text-green-600 border border-green-500/20 px-1.5 py-0.5 rounded font-medium">
+            Online
+          </span>
         </div>
-        <span className="text-xs font-bold text-foreground">Clarity AI</span>
-        <span className="ml-auto text-[10px] bg-green-500/10 text-green-600 border border-green-500/20 px-1.5 py-0.5 rounded font-medium">
-          Online
-        </span>
+        <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold ml-7">
+          Smart Insights
+        </p>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3 space-y-3">
-        {messages.map((m, i) => (
-          <div
-            key={i}
-            className={`text-xs leading-relaxed max-w-[90%] ${
-              m.role === "user"
-                ? "bg-primary text-primary-foreground ml-auto rounded-2xl rounded-br-sm p-3 shadow-md"
-                : "bg-card border border-border mr-auto rounded-2xl rounded-bl-sm p-3 text-muted-foreground shadow-sm"
-            }`}
-          >
-            {m.content}
-          </div>
-        ))}
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col-reverse">
+        <div className="space-y-4">
+          {messages.map((m, i) => (
+            <div
+              key={i}
+              className={`text-xs leading-relaxed max-w-[90%] animate-in slide-in-from-bottom-2 duration-300 ${
+                m.role === "user"
+                  ? "bg-primary text-primary-foreground ml-auto rounded-2xl rounded-br-sm p-3 shadow-md"
+                  : "bg-muted/50 border border-border mr-auto rounded-2xl rounded-bl-sm p-3 text-foreground shadow-sm"
+              }`}
+            >
+              {m.content}
+            </div>
+          ))}
+        </div>
       </div>
 
       <form
         onSubmit={handleSubmit}
-        className="p-3 border-t border-border bg-card"
+        className="p-4 border-t border-border bg-card/80 backdrop-blur-sm"
       >
-        <div className="relative">
+        <div className="relative group">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask AI..."
-            className="w-full pl-3 pr-10 py-2.5 bg-muted/50 border border-transparent focus:border-primary/50 focus:bg-background rounded-xl text-xs outline-none transition-all placeholder:text-muted-foreground/70"
+            placeholder="Ask AI about this data..."
+            className="w-full pl-4 pr-12 py-3 bg-muted/30 border border-border focus:border-primary/50 focus:bg-background rounded-2xl text-xs outline-none transition-all placeholder:text-muted-foreground/50 shadow-inner"
           />
           <button
             type="submit"
-            className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-primary text-primary-foreground rounded-lg flex items-center justify-center hover:bg-primary/90 shadow-sm transition-transform active:scale-95"
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 bg-primary text-primary-foreground rounded-xl flex items-center justify-center hover:bg-primary/90 shadow-lg transition-all active:scale-95 group-hover:scale-105"
           >
-            <ArrowUpRight size={14} />
+            <ArrowUpRight size={16} />
           </button>
         </div>
       </form>

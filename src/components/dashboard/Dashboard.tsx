@@ -24,7 +24,7 @@ import { exportDashboardToPDF } from "@/lib/ExportManager";
 export default function ClarityDashboard() {
   const [activeView, setActiveView] = useState("Report");
   const handleExport = () => {
-    exportDashboardToPDF([], "MyDashboardReport");
+    exportDashboardToPDF("#report-canvas", "Clarity-BI-Report");
   };
   const [showFilters, setShowFilters] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -81,17 +81,22 @@ export default function ClarityDashboard() {
   const handleChartClick = useCallback(
     (data: any) => {
       if (data.region) {
-        setFilter("region", data.region);
-        setSelectedElement(data.region);
+        const newVal =
+          filters.region === data.region ? "All Regions" : data.region;
+        setFilter("region", newVal);
+        setSelectedElement(newVal === "All Regions" ? null : data.region);
       } else if (data.product) {
-        setFilter("product", data.product);
-        setSelectedElement(data.product);
+        const newVal =
+          filters.product === data.product ? "All Products" : data.product;
+        setFilter("product", newVal);
+        setSelectedElement(newVal === "All Products" ? null : data.product);
       } else if (data.name) {
-        setFilter("dealer", data.name);
-        setSelectedElement(data.name);
+        const newVal = filters.dealer === data.name ? "All Dealers" : data.name;
+        setFilter("dealer", newVal);
+        setSelectedElement(newVal === "All Dealers" ? null : data.name);
       }
     },
-    [setFilter],
+    [setFilter, filters],
   );
 
   // Render Widget Content Strategy
@@ -356,22 +361,25 @@ export default function ClarityDashboard() {
           </main>
 
           {/* Clarity AI - Fixed Right Sidebar */}
-          <aside className="w-80 bg-card border-l border-border flex flex-col shrink-0 shadow-xl overflow-hidden">
-            <div className="p-4 border-b border-border bg-muted/20">
-              <h2 className="text-sm font-bold text-foreground leading-none mb-1">
-                Clarity AI
-              </h2>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">
-                Smart Insights
-              </p>
-            </div>
-            <div className="flex-1 overflow-hidden">
-              <ChatPanel
-                messages={chatMessages}
-                onSendMessage={handleSendMessage}
-              />
-            </div>
+          <aside className="w-80 bg-card border-l border-border flex flex-col shrink-0 shadow-2xl relative z-10">
+            <ChatPanel
+              messages={chatMessages}
+              onSendMessage={handleSendMessage}
+            />
           </aside>
+
+          {/* Floating Reset Tooltip/Button */}
+          {activeFilterCount > 0 && (
+            <button
+              onClick={clearAllFilters}
+              className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-primary text-white px-4 py-2 rounded-full shadow-2xl flex items-center gap-2 hover:scale-105 transition-all z-20 animate-in fade-in slide-in-from-bottom-4 active:scale-95"
+            >
+              <X size={14} />
+              <span className="text-xs font-bold uppercase tracking-wider">
+                Reset Dashboard
+              </span>
+            </button>
+          )}
         </div>
 
         {/* Loading Overlay */}

@@ -128,7 +128,10 @@ export function ReportManager({
       </div>
 
       {/* Canvas Area */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden bg-muted/10 p-4 relative scrollbar-thin scrollbar-thumb-muted-foreground/20">
+      <div
+        id="report-canvas"
+        className="flex-1 overflow-y-auto overflow-x-hidden bg-muted/10 p-4 relative scrollbar-thin scrollbar-thumb-muted-foreground/20"
+      >
         {activePage && (
           <GridLayout
             key={activePage.id} // Force remount on page switch for correct RGL init
