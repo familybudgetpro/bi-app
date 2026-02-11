@@ -1,7 +1,7 @@
 "use client";
 import { useState, useMemo, useCallback, useEffect } from "react";
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = ""; // Relative paths for Vercel/Production
 
 // ─── Types ──────────────────────────────────────────────
 

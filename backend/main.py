@@ -37,8 +37,13 @@ gemini = GeminiService()
 
 @app.on_event("startup")
 async def startup():
-    """Auto-load the Excel file if it exists in project root."""
-    excel_path = os.path.join(os.path.dirname(__file__), '..', 'Sales&ClaimsData.xls')
+    """Auto-load the Excel file if it exists."""
+    # Check project root and local backend dir
+    root_path = os.path.join(os.path.dirname(__file__), '..', 'Sales&ClaimsData.xls')
+    local_path = os.path.join(os.path.dirname(__file__), 'Sales&ClaimsData.xls')
+    
+    excel_path = root_path if os.path.exists(root_path) else local_path
+    
     if os.path.exists(excel_path):
         try:
             processor.load_excel(file_path=excel_path)
