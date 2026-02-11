@@ -139,6 +139,19 @@ export interface Correlations {
   }>;
 }
 
+export interface Insight {
+  type: "warning" | "danger" | "success" | "info" | "forecast";
+  title: string;
+  description: string;
+  metric: string;
+  trend: "up" | "down" | "neutral";
+}
+
+export interface ValidationResult {
+  status: "valid" | "warning" | "error";
+  issues: { type: string; message: string }[];
+}
+
 export interface RawDataResult {
   rows: Record<string, unknown>[];
   columns: string[];
@@ -174,7 +187,12 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
     const err = await res.text();
     throw new Error(err);
   }
-  return res.json();
+  const contentType = res.headers.get("content-type");
+  if (contentType && contentType.includes("application/json")) {
+    return res.json();
+  }
+  const text = await res.text();
+  throw new Error(`Expected JSON but received: ${text.slice(0, 100)}...`);
 }
 
 // ─── Hook ────────────────────────────────────────────────
@@ -211,6 +229,8 @@ export function useData(filters: Filters = {}) {
     [],
   );
   const [correlations, setCorrelations] = useState<Correlations>({});
+  const [insights, setInsights] = useState<Insight[]>([]);
+  const [validation, setValidation] = useState<ValidationResult | null>(null);
   const [pendingChanges, setPendingChanges] = useState(0);
 
   // ─── Check status on mount ──────────────────────────────
@@ -262,6 +282,8 @@ export function useData(filters: Filters = {}) {
         trendsData,
         recentData,
         corrData,
+        insightsData,
+        validationData,
       ] = await Promise.all([
         apiFetch<KPIs>(`/api/summary${qs}`),
         apiFetch<FilterOptions>("/api/filters"),
@@ -274,6 +296,8 @@ export function useData(filters: Filters = {}) {
         apiFetch<SalesMonthly[]>(`/api/claims/trends${qs}`),
         apiFetch<Record<string, unknown>[]>(`/api/claims/recent${qs}`),
         apiFetch<Correlations>(`/api/correlations${qs}`),
+        apiFetch<Insight[]>(`/api/insights${qs}`),
+        apiFetch<ValidationResult>("/api/validate"),
       ]);
 
       setKpis(summaryData);
@@ -287,6 +311,8 @@ export function useData(filters: Filters = {}) {
       setClaimTrends(trendsData);
       setRecentClaims(recentData);
       setCorrelations(corrData);
+      setInsights(insightsData);
+      setValidation(validationData);
     } catch (err) {
       console.error("Failed to fetch data:", err);
     } finally {
@@ -496,6 +522,8 @@ export function useData(filters: Filters = {}) {
     claimTrends,
     recentClaims,
     correlations,
+    insights,
+    validation,
 
     // Actions
     handleFileUpload,

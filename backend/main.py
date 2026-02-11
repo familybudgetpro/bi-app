@@ -237,6 +237,23 @@ async def claims_recent(
     return processor.get_claims_recent(filters, limit)
 
 
+@app.get("/api/insights")
+async def get_insights(
+    dealer: str = Query(None), product: str = Query(None),
+    year: str = Query(None), month: str = Query(None),
+    make: str = Query(None), date_from: str = Query(None),
+    date_to: str = Query(None), search: str = Query(None),
+    claim_status: str = Query(None),
+):
+    filters = _parse_filters(dealer, product, year, month, make, date_from, date_to, search, claim_status)
+    return processor.get_insights(filters)
+
+
+@app.get("/api/validate")
+async def validate_data():
+    return processor.validate_data()
+
+
 # ─── Correlations ──────────────────────────────────────────
 
 @app.get("/api/correlations")

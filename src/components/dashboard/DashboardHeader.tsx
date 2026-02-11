@@ -13,8 +13,10 @@ import {
   Copy,
   Check,
   X,
+  AlertTriangle,
 } from "lucide-react";
 import { useTheme } from "@/components/ui/ThemeProvider";
+import { ValidationResult } from "@/hooks/useData";
 
 interface DashboardHeaderProps {
   showFilters: boolean;
@@ -22,9 +24,11 @@ interface DashboardHeaderProps {
   isEditing: boolean;
   setIsEditing: (edit: boolean) => void;
   onUploadClick: () => void;
-  onExportClick: () => void;
+  onExportClick: (type?: "pdf" | "excel") => void;
   isExporting: boolean;
+
   onPublishClick: () => void;
+  validation?: ValidationResult | null;
 }
 
 export function DashboardHeader({
@@ -36,8 +40,10 @@ export function DashboardHeader({
   onExportClick,
   isExporting,
   onPublishClick,
+  validation,
 }: DashboardHeaderProps) {
   const { theme, setTheme } = useTheme();
+  const [isExportingMenuOpen, setIsExportingMenuOpen] = useState(false);
 
   return (
     <header className="h-14 bg-card border-b border-border flex items-center px-4 gap-2 shrink-0 shadow-sm transition-colors duration-300">
@@ -87,19 +93,57 @@ export function DashboardHeader({
           ✓ Done
         </button>
       ) : (
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onExportClick}
-            disabled={isExporting}
-            className="flex items-center gap-2 px-3.5 py-2 bg-card border border-border text-foreground rounded-lg text-xs font-semibold hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isExporting ? (
-              <Loader2 size={14} className="animate-spin" />
-            ) : (
-              <Download size={14} />
+        <div className="flex items-center gap-2 relative">
+          <div className="relative">
+            <button
+              onClick={() => setIsExportingMenuOpen(!isExportingMenuOpen)}
+              disabled={isExporting}
+              className="flex items-center gap-2 px-3.5 py-2 bg-card border border-border text-foreground rounded-lg text-xs font-semibold hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isExporting ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Download size={14} />
+              )}
+              {isExporting ? "Exporting..." : "Export"}
+            </button>
+
+            {isExportingMenuOpen && (
+              <div className="absolute top-full right-0 mt-2 w-48 bg-card border border-border rounded-xl shadow-xl z-50 animate-in fade-in zoom-in-95 cursor-pointer">
+                <div className="p-1">
+                  <button
+                    onClick={() => {
+                      onExportClick("pdf");
+                      setIsExportingMenuOpen(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted rounded-lg text-left"
+                  >
+                    <FileUp size={14} />
+                    <span>Export as PDF / Image</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      onExportClick("excel");
+                      setIsExportingMenuOpen(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted rounded-lg text-left"
+                  >
+                    <Download size={14} />
+                    <span>Export Data (Excel)</span>
+                  </button>
+                </div>
+              </div>
             )}
-            {isExporting ? "Exporting..." : "Export"}
-          </button>
+
+            {/* Backdrop to close menu */}
+            {isExportingMenuOpen && (
+              <div
+                className="fixed inset-0 z-40 bg-transparent"
+                onClick={() => setIsExportingMenuOpen(false)}
+              />
+            )}
+          </div>
+
           <button
             onClick={onPublishClick}
             className="flex items-center gap-2 px-3.5 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-bold hover:bg-primary/90 shadow-md transition-colors"
@@ -107,6 +151,27 @@ export function DashboardHeader({
             <Share2 size={14} />
             Publish
           </button>
+        </div>
+      )}
+
+      {validation && validation.status !== "valid" && (
+        <div className="ml-2 relative group" title="Data Quality Issues Found">
+          <AlertTriangle size={18} className="text-amber-500 cursor-help" />
+          <div className="absolute right-0 top-full mt-2 w-64 bg-card border border-border rounded-xl shadow-xl z-50 p-3 hidden group-hover:block animate-in fade-in zoom-in-95">
+            <h4 className="font-bold text-xs mb-2 flex items-center gap-1">
+              <AlertTriangle size={12} className="text-amber-500" /> Data Issues
+            </h4>
+            <ul className="space-y-1">
+              {validation.issues.map((issue, i) => (
+                <li
+                  key={i}
+                  className="text-[10px] text-muted-foreground flex gap-1 items-start"
+                >
+                  <span className="text-amber-500">•</span> {issue.message}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       )}
     </header>

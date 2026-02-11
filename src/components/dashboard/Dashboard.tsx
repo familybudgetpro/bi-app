@@ -11,6 +11,7 @@ import { WidgetGallery } from "./WidgetGallery";
 import { ReportManager } from "./ReportManager";
 import { Breadcrumbs } from "./Breadcrumbs";
 import { KPIContent } from "./widgets";
+import { InsightCards } from "./InsightCards";
 import { TrendChart } from "./widgets/TrendChart";
 import { PieChartWidget } from "./widgets/PieChartWidget";
 import { RegionChart } from "./widgets/RegionChart";
@@ -34,10 +35,18 @@ export default function ClarityDashboard() {
   const [activeView, setActiveView] = useState("Report");
   const [isExporting, setIsExporting] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
-  const handleExport = async () => {
+  const handleExport = async (type: "pdf" | "excel" = "pdf") => {
     setIsExporting(true);
     try {
-      await exportDashboardToPDF("#report-canvas", "Clarity-BI-Report");
+      if (type === "excel") {
+        // Context-aware export based on active view
+        const table = activeView === "Claims" ? "claims" : "sales";
+        await data.exportData(table);
+      } else {
+        await exportDashboardToPDF("#report-canvas", "Clarity-BI-Report");
+      }
+    } catch (e) {
+      console.error("Export failed", e);
     } finally {
       setIsExporting(false);
     }
@@ -523,6 +532,7 @@ export default function ClarityDashboard() {
               clearFilter={(key) => clearFilter(key)}
               clearAll={clearAllFilters}
             />
+            <InsightCards insights={data.insights} isLoading={data.isLoading} />
             <ReportManager
               isEditing={isEditing}
               dashboardState={dashboardState}
@@ -589,6 +599,7 @@ export default function ClarityDashboard() {
           onExportClick={handleExport}
           isExporting={isExporting}
           onPublishClick={() => setShowPublishModal(true)}
+          validation={data.validation}
         />
 
         <div className="flex-1 flex overflow-hidden relative">

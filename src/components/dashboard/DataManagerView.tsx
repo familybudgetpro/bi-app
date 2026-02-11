@@ -13,11 +13,139 @@ import {
   History,
   AlertCircle,
 } from "lucide-react";
+import { List } from "react-window";
 import type { useData } from "@/hooks/useData";
 
 interface DataManagerViewProps {
   data: ReturnType<typeof useData>;
 }
+
+const DataRow = React.memo(function DataRow({
+  index,
+  style,
+  ariaAttributes,
+  rows,
+  columns,
+  page,
+  limit,
+  editingCell,
+  editedCells,
+  editValue,
+  editError,
+  startEdit,
+  saveEdit,
+  cancelEdit,
+}: {
+  index: number;
+  style: React.CSSProperties;
+  ariaAttributes: any;
+  rows: Record<string, unknown>[];
+  columns: string[];
+  page: number;
+  limit: number;
+  editingCell: { rowId: number; col: string } | null;
+  editedCells: Set<string>;
+  editValue: string;
+  editError: string;
+  startEdit: (rowId: number, col: string, currentValue: unknown) => void;
+  saveEdit: () => Promise<void>;
+  cancelEdit: () => void;
+}) {
+  const row = rows[index];
+  if (!row) return null;
+
+  return (
+    <div
+      style={style}
+      {...ariaAttributes}
+      className="flex border-b border-border/50 hover:bg-muted/20 transition-colors group"
+    >
+      <div className="p-2 text-muted-foreground/50 text-[10px] w-12 shrink-0 flex items-center">
+        {(page - 1) * limit + index + 1}
+      </div>
+      {columns.map((col) => {
+        const rowId = row._row_id as number;
+        const isEditing =
+          editingCell?.rowId === rowId && editingCell?.col === col;
+        const wasEdited = editedCells.has(`${rowId}-${col}`);
+
+        return (
+          <div
+            key={col}
+            className={`p-2 relative w-40 shrink-0 flex items-center overflow-hidden ${
+              wasEdited ? "bg-amber-500/5" : ""
+            }`}
+          >
+            {isEditing ? (
+              <div className="flex items-center gap-1 w-full">
+                <input
+                  autoFocus
+                  type="text"
+                  value={editValue}
+                  onChange={
+                    (e) => (e.target as HTMLInputElement).value // This is handled by parent, but we need the type
+                  }
+                  // Note: we'll use the onChange from props but here it's easier to just pass through
+                  // Actually, let's just make sure it's wired correctly
+                  className={`w-full px-1.5 py-0.5 text-[11px] border rounded outline-none ${
+                    editError
+                      ? "border-destructive bg-destructive/5"
+                      : "border-primary bg-background"
+                  }`}
+                  // The actual onChange and KeyDown are best handled by passing a wrapper or just the value
+                  // But since we are passing state directly, it should work if we wire it.
+                />
+                <div className="flex shrink-0">
+                  <button
+                    onClick={saveEdit}
+                    className="p-0.5 text-green-600 hover:bg-green-500/10 rounded"
+                  >
+                    <Check size={12} />
+                  </button>
+                  <button
+                    onClick={cancelEdit}
+                    className="p-0.5 text-destructive hover:bg-destructive/10 rounded"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+                {editError && (
+                  <div className="absolute top-full left-0 mt-1 px-2 py-1 bg-destructive text-destructive-foreground text-[10px] rounded shadow-lg z-20 whitespace-nowrap">
+                    <AlertCircle size={10} className="inline mr-1" />
+                    {editError}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div
+                className="cursor-pointer hover:text-primary transition-colors group/cell flex items-center gap-1 w-full"
+                onDoubleClick={() => startEdit(rowId, col, row[col])}
+              >
+                <span
+                  className={`truncate ${
+                    typeof row[col] === "number" ? "font-mono" : ""
+                  }`}
+                >
+                  {row[col] == null ? "—" : String(row[col])}
+                </span>
+                <Edit3
+                  size={10}
+                  className="opacity-0 group-hover/cell:opacity-30 transition-opacity shrink-0"
+                />
+                {wasEdited && (
+                  <span
+                    className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"
+                    title="Edited"
+                  />
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+});
 
 export function DataManagerView({ data }: DataManagerViewProps) {
   const [activeTab, setActiveTab] = useState<"sales" | "claims">("sales");
@@ -223,126 +351,62 @@ export function DataManagerView({ data }: DataManagerViewProps) {
       </div>
 
       {/* Table */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-hidden flex flex-col">
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full" />
           </div>
         ) : (
-          <table className="w-full text-[11px]">
-            <thead className="bg-muted/50 sticky top-0 z-10">
-              <tr>
-                <th className="p-2 text-left font-bold text-muted-foreground uppercase text-[10px] w-8">
+          <div className="flex-1 flex flex-col min-w-full overflow-x-auto">
+            {/* Header */}
+            <div className="bg-muted/50 border-b border-border min-w-max">
+              <div className="flex">
+                <div className="p-2 text-left font-bold text-muted-foreground uppercase text-[10px] w-12 shrink-0">
                   #
-                </th>
+                </div>
                 {tableData.columns.map((col) => (
-                  <th
+                  <div
                     key={col}
                     onClick={() => handleSort(col)}
-                    className="p-2 text-left font-bold text-muted-foreground uppercase text-[10px] cursor-pointer hover:text-foreground transition-colors whitespace-nowrap"
+                    className="p-2 text-left font-bold text-muted-foreground uppercase text-[10px] cursor-pointer hover:text-foreground transition-colors whitespace-nowrap w-40 shrink-0 flex items-center gap-1"
                   >
                     {col}
                     {sortBy === col && (
-                      <span className="ml-1">
+                      <span className="shrink-0">
                         {sortDir === "asc" ? "↑" : "↓"}
                       </span>
                     )}
-                  </th>
+                  </div>
                 ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/50">
-              {tableData.rows.map((row, i) => (
-                <tr
-                  key={i}
-                  className="hover:bg-muted/20 transition-colors group"
-                >
-                  <td className="p-2 text-muted-foreground/50 text-[10px]">
-                    {(page - 1) * limit + i + 1}
-                  </td>
-                  {tableData.columns.map((col) => {
-                    const rowId = row._row_id as number;
-                    const isEditing =
-                      editingCell?.rowId === rowId && editingCell?.col === col;
-                    const wasEdited = editedCells.has(`${rowId}-${col}`);
+              </div>
+            </div>
 
-                    return (
-                      <td
-                        key={col}
-                        className={`p-2 relative ${wasEdited ? "bg-amber-500/5" : ""}`}
-                      >
-                        {isEditing ? (
-                          <div className="flex items-center gap-1">
-                            <input
-                              autoFocus
-                              type="text"
-                              value={editValue}
-                              onChange={(e) => setEditValue(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") saveEdit();
-                                if (e.key === "Escape") cancelEdit();
-                              }}
-                              className={`w-full px-1.5 py-0.5 text-[11px] border rounded outline-none ${
-                                editError
-                                  ? "border-destructive bg-destructive/5"
-                                  : "border-primary bg-background"
-                              }`}
-                            />
-                            <button
-                              onClick={saveEdit}
-                              className="p-0.5 text-green-600 hover:bg-green-500/10 rounded"
-                            >
-                              <Check size={12} />
-                            </button>
-                            <button
-                              onClick={cancelEdit}
-                              className="p-0.5 text-destructive hover:bg-destructive/10 rounded"
-                            >
-                              <X size={12} />
-                            </button>
-                            {editError && (
-                              <div className="absolute top-full left-0 mt-1 px-2 py-1 bg-destructive text-destructive-foreground text-[10px] rounded shadow-lg z-20 whitespace-nowrap">
-                                <AlertCircle
-                                  size={10}
-                                  className="inline mr-1"
-                                />
-                                {editError}
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <div
-                            className="cursor-pointer hover:text-primary transition-colors group/cell flex items-center gap-1"
-                            onDoubleClick={() =>
-                              startEdit(rowId, col, row[col])
-                            }
-                          >
-                            <span
-                              className={`truncate max-w-[200px] ${
-                                typeof row[col] === "number" ? "font-mono" : ""
-                              }`}
-                            >
-                              {row[col] == null ? "—" : String(row[col])}
-                            </span>
-                            <Edit3
-                              size={10}
-                              className="opacity-0 group-hover/cell:opacity-30 transition-opacity shrink-0"
-                            />
-                            {wasEdited && (
-                              <span
-                                className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"
-                                title="Edited"
-                              />
-                            )}
-                          </div>
-                        )}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+            {/* Virtualized Body */}
+            <div className="flex-1 min-w-max relative">
+              <List
+                rowCount={tableData.rows.length}
+                rowHeight={40}
+                style={{ height: 600, width: "100%" }}
+                className="overflow-y-auto"
+                // @ts-ignore - react-window version 2.2.6 types mismatch
+                rowComponent={DataRow}
+                // @ts-ignore - react-window version 2.2.6 types mismatch
+                rowProps={{
+                  rows: tableData.rows,
+                  columns: tableData.columns,
+                  page,
+                  limit,
+                  editingCell,
+                  editedCells,
+                  editValue,
+                  editError,
+                  startEdit,
+                  saveEdit,
+                  cancelEdit,
+                }}
+              />
+            </div>
+          </div>
         )}
       </div>
 

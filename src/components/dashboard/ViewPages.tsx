@@ -21,7 +21,7 @@ import type { useData } from "@/hooks/useData";
 
 // ─── Shared Components ──────────────────────────────────
 
-function MetricCard({
+const MetricCard = React.memo(function MetricCard({
   label,
   value,
   subtitle,
@@ -67,9 +67,9 @@ function MetricCard({
       </div>
     </div>
   );
-}
+});
 
-function InsightCard({
+const InsightCard = React.memo(function InsightCard({
   title,
   value,
   change,
@@ -96,7 +96,7 @@ function InsightCard({
       )}
     </div>
   );
-}
+});
 
 function SectionTitle({
   title,
@@ -115,7 +115,7 @@ function SectionTitle({
   );
 }
 
-function ProgressBar({
+const ProgressBar = React.memo(function ProgressBar({
   value,
   max,
   color = "bg-primary",
@@ -133,7 +133,7 @@ function ProgressBar({
       />
     </div>
   );
-}
+});
 
 const fmt = (n: number) => {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;
@@ -143,7 +143,11 @@ const fmt = (n: number) => {
 
 // ─── Analytics View ──────────────────────────────────────
 
-export function AnalyticsView({ data }: { data: ReturnType<typeof useData> }) {
+export const AnalyticsView = React.memo(function AnalyticsView({
+  data,
+}: {
+  data: ReturnType<typeof useData>;
+}) {
   const k = data.kpis;
   if (!k) {
     return (
@@ -157,7 +161,7 @@ export function AnalyticsView({ data }: { data: ReturnType<typeof useData> }) {
   const topProduct = data.salesProducts[0];
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+    <div className="flex-1 overflow-y-auto p-6 space-y-6" id="analytics-view">
       <SectionTitle
         title="Analytics Overview"
         subtitle="Key metrics and performance indicators"
@@ -262,11 +266,15 @@ export function AnalyticsView({ data }: { data: ReturnType<typeof useData> }) {
       </div>
     </div>
   );
-}
+});
 
 // ─── Claims View ───────────────────────────────────────
 
-export function ClaimsView({ data }: { data: ReturnType<typeof useData> }) {
+export const ClaimsView = React.memo(function ClaimsView({
+  data,
+}: {
+  data: ReturnType<typeof useData>;
+}) {
   const k = data.kpis;
   if (!k) {
     return (
@@ -277,7 +285,7 @@ export function ClaimsView({ data }: { data: ReturnType<typeof useData> }) {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+    <div className="flex-1 overflow-y-auto p-6 space-y-6" id="claims-view">
       <SectionTitle
         title="Claims Analysis"
         subtitle="Claim statuses, parts analysis, and trends"
@@ -455,11 +463,11 @@ export function ClaimsView({ data }: { data: ReturnType<typeof useData> }) {
       </div>
     </div>
   );
-}
+});
 
 // ─── Performance View ──────────────────────────────────
 
-export function PerformanceView({
+export const PerformanceView = React.memo(function PerformanceView({
   data,
 }: {
   data: ReturnType<typeof useData>;
@@ -477,7 +485,7 @@ export function PerformanceView({
   const maxPremium = Math.max(...data.salesDealers.map((d) => d.premium), 1);
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+    <div className="flex-1 overflow-y-auto p-6 space-y-6" id="performance-view">
       <SectionTitle
         title="Performance & Correlations"
         subtitle="Dealer, product, and vehicle analysis with claim correlations"
@@ -674,11 +682,15 @@ export function PerformanceView({
       )}
     </div>
   );
-}
+});
 
 // ─── Partners View ─────────────────────────────────────
 
-export function PartnersView({ data }: { data: ReturnType<typeof useData> }) {
+export const PartnersView = React.memo(function PartnersView({
+  data,
+}: {
+  data: ReturnType<typeof useData>;
+}) {
   const k = data.kpis;
   if (!k) {
     return (
@@ -689,7 +701,7 @@ export function PartnersView({ data }: { data: ReturnType<typeof useData> }) {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+    <div className="flex-1 overflow-y-auto p-6 space-y-6" id="partners-view">
       <SectionTitle
         title="Dealer Partners"
         subtitle="Partner performance and distribution"
@@ -769,13 +781,13 @@ export function PartnersView({ data }: { data: ReturnType<typeof useData> }) {
       </div>
     </div>
   );
-}
+});
 
 // ─── Settings View ─────────────────────────────────────
 
-export function SettingsView() {
+export const SettingsView = React.memo(function SettingsView() {
   return (
-    <div className="flex-1 overflow-y-auto p-6">
+    <div className="flex-1 overflow-y-auto p-6" id="settings-view">
       <SectionTitle title="Settings" subtitle="Dashboard configuration" />
       <div className="max-w-2xl space-y-6">
         <div className="bg-card border border-border rounded-xl p-5">
@@ -835,18 +847,33 @@ export function SettingsView() {
       </div>
     </div>
   );
-}
+});
+
+const ProfileField = React.memo(function ProfileField({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-xs font-medium text-foreground">{value}</span>
+    </div>
+  );
+});
 
 // ─── Profile View ──────────────────────────────────────
 
-export function ProfileView() {
+export const ProfileView = React.memo(function ProfileView() {
   return (
-    <div className="flex-1 overflow-y-auto p-6">
+    <div className="flex-1 overflow-y-auto p-6" id="profile-view">
       <SectionTitle title="My Profile" />
       <div className="max-w-2xl">
         <div className="bg-card border border-border rounded-xl p-6">
           <div className="flex items-center gap-4 mb-6">
-            <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-lg">
+            <div className="w-16 h-16 bg-linear-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-lg">
               MA
             </div>
             <div>
@@ -868,13 +895,4 @@ export function ProfileView() {
       </div>
     </div>
   );
-}
-
-function ProfileField({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
-      <span className="text-xs text-muted-foreground">{label}</span>
-      <span className="text-xs font-medium text-foreground">{value}</span>
-    </div>
-  );
-}
+});

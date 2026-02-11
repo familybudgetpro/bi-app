@@ -23,9 +23,7 @@ interface ChatMessage {
 
 interface ChatPanelProps {
   show: boolean;
-  onSend: (
-    message: string,
-  ) => Promise<{
+  onSend: (message: string) => Promise<{
     response: string;
     actions?: AiAction | null;
     suggestions?: string[];
@@ -147,7 +145,17 @@ export function ChatPanel({
                   : "bg-muted/50 text-foreground border border-border"
               }`}
             >
-              <div className="whitespace-pre-wrap">{msg.content}</div>
+              <div className="whitespace-pre-wrap">
+                {msg.content
+                  .split(/(\*\*.*?\*\*)/g)
+                  .map((part, index) =>
+                    part.startsWith("**") && part.endsWith("**") ? (
+                      <strong key={index}>{part.slice(2, -2)}</strong>
+                    ) : (
+                      part
+                    ),
+                  )}
+              </div>
 
               {/* AI Action Buttons */}
               {msg.role === "assistant" && msg.actions && (

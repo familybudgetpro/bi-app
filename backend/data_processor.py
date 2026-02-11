@@ -21,6 +21,7 @@ class DataProcessor:
         self.change_log: list[dict] = []
         self._cached_metrics: Optional[dict] = None
         self._metrics_dirty = True
+        self._query_cache: dict[tuple, Any] = {}
 
     # ─── Loading ────────────────────────────────────────────────
 
@@ -47,6 +48,9 @@ class DataProcessor:
         # Add row IDs
         self.original_sales_df.insert(0, '_row_id', range(len(self.original_sales_df)))
         self.original_claims_df.insert(0, '_row_id', range(len(self.original_claims_df)))
+
+        # Invalidate cache
+        self.clear_cache()
 
         # Working copies
         self.sales_df = self.original_sales_df.copy()
@@ -151,10 +155,27 @@ class DataProcessor:
 
         return result
 
+    def _get_cache_key(self, method_name: str, filters: Optional[dict]) -> tuple:
+        """Create a hashable key for caching analytical results."""
+        if not filters:
+            return (method_name, None)
+        # Convert dict to sorted tuple of items for hashability
+        filter_tuple = tuple(sorted(filters.items(), key=lambda x: x[0]))
+        return (method_name, filter_tuple)
+
+    def clear_cache(self):
+        """Clear the query cache."""
+        self._query_cache = {}
+        self._metrics_dirty = True
+
     # ─── Summary / KPIs ────────────────────────────────────────
 
     def get_summary(self, filters: dict = None) -> dict:
         """Get overall KPI summary."""
+        cache_key = self._get_cache_key('get_summary', filters)
+        if cache_key in self._query_cache:
+            return self._query_cache[cache_key]
+
         if self.sales_df is None:
             return {}
 
@@ -178,7 +199,7 @@ class DataProcessor:
         avg_claim_cost = (total_claims_amount / total_claims) if total_claims > 0 else 0
         avg_premium = (total_premium / total_policies) if total_policies > 0 else 0
 
-        return {
+        res = {
             'totalPremium': round(total_premium, 2),
             'totalRiskPremium': round(total_risk_premium, 2),
             'totalClaimsAmount': round(total_claims_amount, 2),
@@ -189,9 +210,11 @@ class DataProcessor:
             'avgClaimCost': round(avg_claim_cost, 2),
             'avgPremium': round(avg_premium, 2),
             'policiesWithClaims': policies_with_claims,
-            'uniqueDealers': int(sales['Dealer'].nunique()) if 'Dealer' in sales.columns else 0,
             'uniqueMakes': int(sales['Make'].nunique()) if 'Make' in sales.columns else 0,
         }
+        
+        self._query_cache[cache_key] = res
+        return res
 
     # ─── Filter Options ────────────────────────────────────────
 
@@ -245,6 +268,10 @@ class DataProcessor:
 
     def get_sales_monthly(self, filters: dict = None) -> list[dict]:
         """Monthly sales trends."""
+        cache_key = self._get_cache_key('get_sales_monthly', filters)
+        if cache_key in self._query_cache:
+            return self._query_cache[cache_key]
+
         if self.sales_df is None:
             return []
 
@@ -263,10 +290,16 @@ class DataProcessor:
         grouped = grouped.sort_values(['Year', 'Month'])
         grouped['period'] = grouped['Year'].astype(str) + '-' + grouped['Month'].astype(str).str.zfill(2)
 
-        return grouped.to_dict('records')
+        res = grouped.to_dict('records')
+        self._query_cache[cache_key] = res
+        return res
 
     def get_sales_dealers(self, filters: dict = None) -> list[dict]:
         """Dealer performance breakdown."""
+        cache_key = self._get_cache_key('get_sales_dealers', filters)
+        if cache_key in self._query_cache:
+            return self._query_cache[cache_key]
+
         if self.sales_df is None:
             return []
 
@@ -299,10 +332,16 @@ class DataProcessor:
             grouped['claimRate'] = np.where(grouped['policies'] > 0,
                                             (grouped['claimsCount'] / grouped['policies'] * 100).round(1), 0)
 
-        return grouped.to_dict('records')
+        res = grouped.to_dict('records')
+        self._query_cache[cache_key] = res
+        return res
 
     def get_sales_products(self, filters: dict = None) -> list[dict]:
         """Product mix breakdown."""
+        cache_key = self._get_cache_key('get_sales_products', filters)
+        if cache_key in self._query_cache:
+            return self._query_cache[cache_key]
+
         if self.sales_df is None:
             return []
 
@@ -319,10 +358,16 @@ class DataProcessor:
         ).reset_index()
         grouped.columns = ['product', 'premium', 'riskPremium', 'count']
 
-        return grouped.to_dict('records')
+        res = grouped.to_dict('records')
+        self._query_cache[cache_key] = res
+        return res
 
     def get_sales_vehicles(self, filters: dict = None) -> list[dict]:
         """Vehicle make breakdown."""
+        cache_key = self._get_cache_key('get_sales_vehicles', filters)
+        if cache_key in self._query_cache:
+            return self._query_cache[cache_key]
+
         if self.sales_df is None:
             return []
 
@@ -339,12 +384,18 @@ class DataProcessor:
         grouped.columns = ['make', 'premium', 'count']
         grouped = grouped.sort_values('count', ascending=False).head(20)
 
-        return grouped.to_dict('records')
+        res = grouped.to_dict('records')
+        self._query_cache[cache_key] = res
+        return res
 
     # ─── Claims Endpoints ──────────────────────────────────────
 
     def get_claims_status(self, filters: dict = None) -> list[dict]:
         """Claim status distribution."""
+        cache_key = self._get_cache_key('get_claims_status', filters)
+        if cache_key in self._query_cache:
+            return self._query_cache[cache_key]
+
         if self.claims_df is None:
             return []
 
@@ -363,10 +414,16 @@ class DataProcessor:
         colors = {'Approved': '#10b981', 'Rejected': '#ef4444', 'Reversed': '#f59e0b', 'Pending': '#3b82f6'}
         grouped['color'] = grouped['status'].map(lambda s: colors.get(s, '#64748b'))
 
-        return grouped.to_dict('records')
+        res = grouped.to_dict('records')
+        self._query_cache[cache_key] = res
+        return res
 
     def get_claims_parts(self, filters: dict = None) -> list[dict]:
         """Part type failure analysis."""
+        cache_key = self._get_cache_key('get_claims_parts', filters)
+        if cache_key in self._query_cache:
+            return self._query_cache[cache_key]
+
         if self.claims_df is None:
             return []
 
@@ -384,10 +441,16 @@ class DataProcessor:
         grouped.columns = ['partType', 'count', 'totalAmount', 'avgCost']
         grouped = grouped.sort_values('count', ascending=False)
 
-        return grouped.to_dict('records')
+        res = grouped.to_dict('records')
+        self._query_cache[cache_key] = res
+        return res
 
     def get_claims_trends(self, filters: dict = None) -> list[dict]:
         """Monthly claim trends."""
+        cache_key = self._get_cache_key('get_claims_trends', filters)
+        if cache_key in self._query_cache:
+            return self._query_cache[cache_key]
+
         if self.claims_df is None:
             return []
 
@@ -406,10 +469,19 @@ class DataProcessor:
         grouped = grouped.sort_values(['Year', 'Month'])
         grouped['period'] = grouped['Year'].astype(str) + '-' + grouped['Month'].astype(str).str.zfill(2)
 
-        return grouped.to_dict('records')
+        res = grouped.to_dict('records')
+        self._query_cache[cache_key] = res
+        return res
 
     def get_claims_recent(self, filters: dict = None, limit: int = 50) -> list[dict]:
         """Recent claims table data."""
+        cache_key = self._get_cache_key('get_claims_recent', filters)
+        # Add limit to cache key if needed, or just cache the result of the filters
+        # For simplicity, let's include limit in the name if we want to be exact
+        cache_key = (f'get_claims_recent_{limit}', cache_key[1])
+        if cache_key in self._query_cache:
+            return self._query_cache[cache_key]
+
         if self.claims_df is None:
             return []
 
@@ -427,12 +499,18 @@ class DataProcessor:
                 result[col] = result[col].dt.strftime('%Y-%m-%d')
         result = result.drop(columns=['_row_id'], errors='ignore')
 
-        return result.to_dict('records')
+        res = result.to_dict('records')
+        self._query_cache[cache_key] = res
+        return res
 
     # ─── Correlations ──────────────────────────────────────────
 
     def get_correlations(self, filters: dict = None) -> dict:
         """Sales-Claims correlations."""
+        cache_key = self._get_cache_key('get_correlations', filters)
+        if cache_key in self._query_cache:
+            return self._query_cache[cache_key]
+
         if self.merged_df is None:
             return {}
 
@@ -496,6 +574,7 @@ class DataProcessor:
             by_year['claimRate'] = (by_year['withClaims'] / by_year['policies'] * 100).round(1)
             result['byYear'] = by_year.to_dict('records')
 
+        self._query_cache[cache_key] = result
         return result
 
     # ─── Raw Data (Paginated) ──────────────────────────────────
@@ -572,6 +651,9 @@ class DataProcessor:
         # Apply change
         df.loc[mask, column] = validated_value
 
+        # Invalidate cache
+        self.clear_cache()
+
         # Log change
         self.change_log.append({
             'timestamp': datetime.now().isoformat(),
@@ -642,7 +724,7 @@ class DataProcessor:
         self.sales_df = self.original_sales_df.copy()
         self.claims_df = self.original_claims_df.copy()
         self._build_merged()
-        self._metrics_dirty = True
+        self.clear_cache()
 
         changes_reverted = len(self.change_log)
         self.change_log = []
@@ -695,3 +777,144 @@ AVAILABLE DATA DIMENSIONS:
 - Top Makes: {', '.join(filter_opts.get('makes', [])[:15])}
 """
         return text
+
+    # ─── Insights & Forecast ───────────────────────────────────
+
+    def get_insights(self, filters: dict = None) -> list[dict]:
+        """Generate automatic insights and forecasts."""
+        cache_key = self._get_cache_key('get_insights', filters)
+        if cache_key in self._query_cache:
+            return self._query_cache[cache_key]
+
+        insights = []
+        if self.sales_df is None:
+            return insights
+
+        summary = self.get_summary(filters)
+        
+        # 1. Loss Ratio Analysis
+        lr = summary.get('lossRatio', 0)
+        if lr > 80:
+            insights.append({
+                "type": "warning",
+                "title": "High Loss Ratio Alert",
+                "description": f"Overall loss ratio is {lr}%, which is critical. Review high-risk dealers immediately.",
+                "metric": f"{lr}%",
+                "trend": "down"
+            })
+        elif lr > 60:
+            insights.append({
+                "type": "warning",
+                "title": "Elevated Loss Ratio",
+                "description": f"Loss ratio of {lr}% is above the healthy threshold of 60%.",
+                "metric": f"{lr}%",
+                "trend": "neutral"
+            })
+        else:
+             insights.append({
+                "type": "success",
+                "title": "Healthy Performance",
+                "description": f"Loss ratio of {lr}% is within profitable range.",
+                "metric": f"{lr}%",
+                "trend": "up"
+            })
+
+        # 2. Dealer Performance (Best & Worst)
+        dealers = self.get_sales_dealers(filters)
+        if dealers:
+            # Sort by policies for relevance, then loss ratio
+            major_dealers = [d for d in dealers if d['policies'] > 10] # Filter small data
+            if major_dealers:
+                worst_dealer = max(major_dealers, key=lambda x: x.get('lossRatio', 0))
+                best_dealer = max(major_dealers, key=lambda x: x.get('premium', 0))
+
+                if worst_dealer.get('lossRatio', 0) > 100:
+                    insights.append({
+                        "type": "danger",
+                        "title": "Critical Dealer Risk",
+                        "description": f"Dealer {worst_dealer['dealer']} has {worst_dealer['lossRatio']}% loss ratio.",
+                        "metric": f"{worst_dealer['lossRatio']}% LR",
+                        "trend": "down"
+                    })
+                
+                insights.append({
+                    "type": "info",
+                    "title": "Top Performer",
+                    "description": f"Dealer {best_dealer['dealer']} leads with {best_dealer['premium']:,.0f} in premium.",
+                    "metric": f"{best_dealer['policies']} Policies",
+                    "trend": "up"
+                })
+
+        # 3. Simple Forecast (Next Month)
+        monthly = self.get_sales_monthly(filters)
+        if len(monthly) >= 3:
+            # Simple moving average of last 3 months
+            last_3 = monthly[-3:]
+            avg_growth = 0
+            if len(last_3) > 1:
+                # Calculate simple month-over-month growth rate
+                growth_rates = []
+                for i in range(1, len(last_3)):
+                    prev = last_3[i-1]['premium']
+                    curr = last_3[i]['premium']
+                    if prev > 0:
+                        growth_rates.append((curr - prev) / prev)
+                
+                if growth_rates:
+                    avg_growth = sum(growth_rates) / len(growth_rates)
+
+            last_prem = monthly[-1]['premium']
+            forecast_prem = last_prem * (1 + avg_growth)
+            
+            direction = "growing" if avg_growth >= 0 else "declining"
+            
+            insights.append({
+                "type": "forecast",
+                "title": "Sales Forecast",
+                "description": f"Based on recent trends, next month's premium is projected to be around {forecast_prem:,.0f} ({avg_growth*100:+.1f}%).",
+                "metric": f"{forecast_prem:,.0f}",
+                "trend": "up" if avg_growth > 0 else "down"
+            })
+
+        self._query_cache[cache_key] = insights
+        return insights
+
+    # ─── Data Validation ───────────────────────────────────────
+
+    def validate_data(self) -> dict:
+        """Validate loaded data for critical issues."""
+        issues = []
+        status = "valid"
+
+        if self.sales_df is None:
+            return {"status": "error", "issues": ["No data loaded"]}
+
+        # 1. Check Required Columns
+        required_sales_cols = ['Policy No', 'Dealer', 'Product', 'Year', 'Month', 'Premium']
+        missing_sales = [col for col in required_sales_cols if col not in self.sales_df.columns]
+        if missing_sales:
+            issues.append({"type": "error", "message": f"Missing required Sales columns: {', '.join(missing_sales)}"})
+            status = "error"
+
+        if self.claims_df is not None:
+             required_claims_cols = ['Policy No', 'Claim Status', 'Total Auth Amount']
+             missing_claims = [col for col in required_claims_cols if col not in self.claims_df.columns]
+             if missing_claims:
+                 issues.append({"type": "error", "message": f"Missing required Claims columns: {', '.join(missing_claims)}"})
+                 status = "error"
+
+        # 2. Check for Duplicates (Policy No should be unique in Sales)
+        if 'Policy No' in self.sales_df.columns:
+            duplicates = self.sales_df.duplicated(subset=['Policy No']).sum()
+            if duplicates > 0:
+                issues.append({"type": "warning", "message": f"Found {duplicates} duplicate Policy Numbers in Sales data."})
+                if status == "valid": status = "warning"
+
+        # 3. Check Data Types (Premium should be numeric)
+        if 'Premium' in self.sales_df.columns:
+            non_numeric = pd.to_numeric(self.sales_df['Premium'], errors='coerce').isna().sum()
+            if non_numeric > 0:
+                issues.append({"type": "warning", "message": f"Found {non_numeric} non-numeric values in Premium column."})
+                if status == "valid": status = "warning"
+
+        return {"status": status, "issues": issues}
