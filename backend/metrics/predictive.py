@@ -29,7 +29,13 @@ def predict_loss_ratio(sales_df: pd.DataFrame, claims_df: pd.DataFrame, filters:
         return {'error': 'Not enough data points for prediction'}
 
     # Linear Regression
-    slope, intercept, r_value, p_value, std_err = stats.linregress(merged['period_idx'], merged['loss_ratio'])
+    try:
+        slope, intercept, r_value, p_value, std_err = stats.linregress(merged['period_idx'], merged['loss_ratio'])
+    except Exception:
+        slope, intercept, r_value = 0, 0, 0
+
+    if np.isnan(slope) or np.isnan(intercept):
+        slope, intercept, r_value = 0, 0, 0
 
     # Forecast next 3 months
     last_idx = merged['period_idx'].max()
@@ -49,12 +55,12 @@ def predict_loss_ratio(sales_df: pd.DataFrame, claims_df: pd.DataFrame, filters:
             
         forecast.append({
             'period': f"{current_year}-{str(current_month).zfill(2)}",
-            'predictedLossRatio': round(predicted_lr, 2),
+            'predictedLossRatio': round(predicted_lr, 2) if not np.isnan(predicted_lr) else 0,
             'trend': 'Increasing' if slope > 0 else 'Decreasing'
         })
 
     return {
         'historicalSlope': round(slope, 4),
         'forecast': forecast,
-        'rSquared': round(r_value**2, 4)
+        'rSquared': round(r_value**2, 4) if not np.isnan(r_value) else 0
     }

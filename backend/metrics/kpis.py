@@ -38,6 +38,7 @@ def get_summary(sales_df: pd.DataFrame, claims_df: pd.DataFrame, merged_df: pd.D
         'avgPremium': round(avg_premium, 2),
         'policiesWithClaims': policies_with_claims,
         'uniqueMakes': int(sales['Make'].nunique()) if 'Make' in sales.columns else 0,
+        'uniqueDealers': int(sales['Dealer'].nunique()) if 'Dealer' in sales.columns else 0,
     }
 
 def get_correlations(merged_df: pd.DataFrame, filters: dict = None) -> dict:
@@ -53,6 +54,10 @@ def get_correlations(merged_df: pd.DataFrame, filters: dict = None) -> dict:
     import numpy as np
     from backend.core.utils import find_column
 
+    # Helper to clean df
+    def clean_df(d):
+        return d.fillna(0).replace([np.inf, -np.inf], 0)
+
     # Claim rate by dealer
     dealer_col = find_column(df, ['Dealer'])
     if dealer_col:
@@ -66,7 +71,7 @@ def get_correlations(merged_df: pd.DataFrame, filters: dict = None) -> dict:
         by_dealer['claimRate'] = (by_dealer['withClaims'] / by_dealer['policies'] * 100).round(1)
         by_dealer['lossRatio'] = np.where(by_dealer['totalPremium'] > 0,
                                             (by_dealer['totalClaimAmount'] / by_dealer['totalPremium'] * 100).round(1), 0)
-        result['byDealer'] = by_dealer.to_dict('records')
+        result['byDealer'] = clean_df(by_dealer).to_dict('records')
 
     # Claim rate by product
     prod_col = find_column(df, ['Product', 'Coverage'])
@@ -81,7 +86,7 @@ def get_correlations(merged_df: pd.DataFrame, filters: dict = None) -> dict:
         by_product['claimRate'] = (by_product['withClaims'] / by_product['policies'] * 100).round(1)
         by_product['lossRatio'] = np.where(by_product['totalPremium'] > 0,
                                             (by_product['totalClaimAmount'] / by_product['totalPremium'] * 100).round(1), 0)
-        result['byProduct'] = by_product.to_dict('records')
+        result['byProduct'] = clean_df(by_product).to_dict('records')
 
     # Claim rate by vehicle make (top 15)
     if 'Make' in df.columns:
@@ -93,7 +98,7 @@ def get_correlations(merged_df: pd.DataFrame, filters: dict = None) -> dict:
         ).reset_index()
         by_make.columns = ['make', 'policies', 'withClaims', 'totalPremium', 'totalClaimAmount']
         by_make['claimRate'] = (by_make['withClaims'] / by_make['policies'] * 100).round(1)
-        by_make = by_make.sort_values('policies', ascending=False).head(15)
+        by_make = clean_df(by_make).sort_values('policies', ascending=False).head(15)
         result['byMake'] = by_make.to_dict('records')
 
     # Claim rate by year
@@ -106,6 +111,6 @@ def get_correlations(merged_df: pd.DataFrame, filters: dict = None) -> dict:
         ).reset_index()
         by_year.columns = ['year', 'policies', 'withClaims', 'totalPremium', 'totalClaimAmount']
         by_year['claimRate'] = (by_year['withClaims'] / by_year['policies'] * 100).round(1)
-        result['byYear'] = by_year.to_dict('records')
+        result['byYear'] = clean_df(by_year).to_dict('records')
 
     return result

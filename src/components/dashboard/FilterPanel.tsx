@@ -32,10 +32,11 @@ export function FilterPanel({
 
   const handleApply = () => {
     applyFilters();
+    onClose();
   };
 
   return (
-    <aside className="w-72 bg-card border-r border-border flex flex-col shrink-0 shadow-lg animate-in slide-in-from-left-4 duration-300 z-20">
+    <aside className="absolute top-0 left-0 bottom-0 w-72 bg-card border-r border-border flex flex-col shrink-0 shadow-2xl animate-in slide-in-from-left-4 duration-300 z-40">
       {/* Header */}
       <div className="p-4 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2">

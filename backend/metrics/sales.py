@@ -21,6 +21,8 @@ def get_sales_monthly(df: pd.DataFrame, filters: dict = None) -> list[dict]:
 
     grouped = grouped.sort_values(['Year', 'Month'])
     grouped['period'] = grouped['Year'].astype(str) + '-' + grouped['Month'].astype(str).str.zfill(2)
+    
+    grouped = grouped.fillna(0) # Ensure no NaNs
 
     return grouped.to_dict('records')
 
@@ -58,6 +60,7 @@ def get_sales_dealers(df: pd.DataFrame, merged_df: pd.DataFrame = None, filters:
         grouped['claimRate'] = np.where(grouped['policies'] > 0,
                                         (grouped['claimsCount'] / grouped['policies'] * 100).round(1), 0)
 
+    grouped = grouped.fillna(0)
     return grouped.to_dict('records')
 
 def get_sales_products(df: pd.DataFrame, filters: dict = None) -> list[dict]:
@@ -78,6 +81,7 @@ def get_sales_products(df: pd.DataFrame, filters: dict = None) -> list[dict]:
     ).reset_index()
     grouped.columns = ['product', 'premium', 'riskPremium', 'count']
 
+    grouped = grouped.fillna(0)
     return grouped.to_dict('records')
 
 def get_sales_vehicles(df: pd.DataFrame, filters: dict = None) -> list[dict]:
@@ -98,4 +102,5 @@ def get_sales_vehicles(df: pd.DataFrame, filters: dict = None) -> list[dict]:
     grouped.columns = ['make', 'premium', 'count']
     grouped = grouped.sort_values('count', ascending=False).head(20)
 
+    grouped = grouped.fillna(0)
     return grouped.to_dict('records')

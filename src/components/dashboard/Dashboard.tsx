@@ -603,6 +603,12 @@ export default function ClarityDashboard() {
         />
 
         <div className="flex-1 flex overflow-hidden relative">
+          {showFilters && (
+            <div
+              className="absolute inset-0 bg-background/20 backdrop-blur-sm z-30 animate-in fade-in duration-300"
+              onClick={() => setShowFilters(false)}
+            />
+          )}
           <FilterPanel
             show={showFilters}
             onClose={() => setShowFilters(false)}

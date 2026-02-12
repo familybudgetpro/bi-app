@@ -41,6 +41,7 @@ def get_claims_parts(df: pd.DataFrame, filters: dict = None) -> list[dict]:
     ).reset_index()
     grouped.columns = ['partType', 'count', 'totalAmount', 'avgCost']
     grouped = grouped.sort_values('count', ascending=False)
+    grouped = grouped.fillna(0) # Ensure no NaNs from avgCost
 
     return grouped.to_dict('records')
 
@@ -63,6 +64,7 @@ def get_claims_trends(df: pd.DataFrame, filters: dict = None) -> list[dict]:
     ).reset_index()
     grouped = grouped.sort_values(['Year', 'Month'])
     grouped['period'] = grouped['Year'].astype(str) + '-' + grouped['Month'].astype(str).str.zfill(2)
+    grouped = grouped.fillna(0)
 
     return grouped.to_dict('records')
 

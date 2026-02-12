@@ -110,11 +110,13 @@ async def get_status():
 # ─── Filters & Summary ─────────────────────────────────────
 
 def _parse_filters(dealer, product, year, month, make, date_from, date_to, search, claim_status):
-    return {k: v for k, v in {
+    filters = {
         'dealer': dealer, 'product': product, 'year': year, 'month': month,
         'make': make, 'date_from': date_from, 'date_to': date_to,
         'search': search, 'claim_status': claim_status,
-    }.items() if v is not None}
+    }
+    # Filter out None and 'All'
+    return {k: v for k, v in filters.items() if v is not None and v != 'All' and v != ''}
 
 @app.get("/api/summary")
 async def get_summary(
@@ -252,6 +254,24 @@ async def get_prediction(
     filters = _parse_filters(dealer, product, year, month, make, date_from, date_to, search, claim_status)
     return predictive.predict_loss_ratio(data_manager.sales_df, data_manager.claims_df, filters)
 
+
+# ─── Data Validation ───────────────────────────────────────
+
+@app.get("/api/validate")
+async def validate_data():
+    """Validate data structure and quality."""
+    issues = []
+    if data_manager.sales_df is None:
+        return {"status": "error", "issues": [{"type": "missing_data", "message": "Sales data not loaded"}]}
+    
+    # Simple checks
+    if len(data_manager.sales_df) < 100:
+        issues.append({"type": "data_volume", "message": "Low sales data volume"})
+        
+    return {
+        "status": "valid" if not issues else "warning",
+        "issues": issues
+    }
 
 # ─── Advanced Analytics ────────────────────────────────────
 

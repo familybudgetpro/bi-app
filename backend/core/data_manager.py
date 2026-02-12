@@ -43,11 +43,37 @@ class DataManager:
         self.original_sales_df.insert(0, '_row_id', range(len(self.original_sales_df)))
         self.original_claims_df.insert(0, '_row_id', range(len(self.original_claims_df)))
 
+        # Ensure Year/Month exist
+        self._ensure_date_columns(self.original_sales_df)
+        self._ensure_date_columns(self.original_claims_df)
+
         self.clear_cache()
         self.sales_df = self.original_sales_df.copy()
         self.claims_df = self.original_claims_df.copy()
         self._build_merged()
         self.change_log = []
+
+    def _ensure_date_columns(self, df: pd.DataFrame):
+        """Derive Year and Month from date columns if missing."""
+        if df is None: return
+        
+        # Check if we need to add them
+        if 'Year' in df.columns and 'Month' in df.columns:
+            return
+
+        date_col = find_column(df, ['Policy Sold Date', 'Failure Date', 'Date', 'Invoice Date'])
+        if date_col:
+            try:
+                # Convert to datetime if not already
+                if not pd.api.types.is_datetime64_any_dtype(df[date_col]):
+                    df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
+                
+                if 'Year' not in df.columns:
+                    df['Year'] = df[date_col].dt.year.fillna(0).astype(int)
+                if 'Month' not in df.columns:
+                    df['Month'] = df[date_col].dt.month.fillna(0).astype(int)
+            except Exception as e:
+                print(f"Error deriving Year/Month from {date_col}: {e}")
 
     def _build_merged(self):
         """Link Sales and Claims by Policy No."""
